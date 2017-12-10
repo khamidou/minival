@@ -1,19 +1,27 @@
 <!DOCTYPE html>
 
 <html>
-  <body>
-    <p>
-    <form method="POST">
-      {{ form.hidden_tag() }}
-      {% for error in form.code.errors %}
-      <p>{{ error }}</p>
-      {% endfor %}
-      <p>
-        {{ form.code.label }} {{ form.code() }}
-      </p>
-      <p>
-        <input type="submit" value="Submit">
-      </p>
-    </form>
-  </body>
+    <body>
+        <p>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            {% for error in form.code.errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+            <p>
+            <b>{{ form.code.label }}</b><br /> {{ form.code(cols="80", rows="25") }}
+            </p>
+            <p>
+            <input type="submit" value="Submit">
+            </p>
+        </form>
+        <p>
+        <b>Result:</b>
+        <pre>
+            <code>
+                {{ result }}
+            </code>
+        </pre>
+        </p>
+    </body>
 </html>
