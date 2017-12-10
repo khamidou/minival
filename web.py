@@ -1,5 +1,8 @@
+import prctl
 from flask import Flask
 app = Flask(__name__)
+
+prctl.set_seccomp(True)
 
 @app.route("/")
 def hello():
