@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<html>
+  <body>
+    <p>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      {% for error in form.code.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+      <p>
+        {{ form.code.label }} {{ form.code() }}
+      </p>
+      <p>
+        <input type="submit" value="Submit">
+      </p>
+    </form>
+  </body>
+</html>
