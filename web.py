@@ -27,10 +27,9 @@ def main():
     return render_template("index.html", form=form)
 
 def execute_in_sandbox(code):
-    temporary_file = tempfile.mkstemp(suffix='.py')
-    with open(temporary_file, 'w+') as fd:
-        fd.write('import prctl ; prctl.set_seccomp(True)')
-        fd.write(code)
+    tmp_fd, tmp_filename = tempfile.mkstemp(suffix='.py')
+    tmp_fd.write('import prctl ; prctl.set_seccomp(True)')
+    tmp_fd.write(code)
 
     read_pipe, write_pipe = os.pipe()
     pid = os.fork()
@@ -42,7 +41,7 @@ def execute_in_sandbox(code):
         cmd = "/usr/bin/python"
 
         os.dup2(write_pipe, sys.stdout.fileno())
-        os.execv(cmd, [cmd, temporary_file])
+        os.execv(cmd, [cmd, tmp_filename])
     else:
         os.close(write_pipe)
         os.waitpid(pid, 0)
@@ -55,7 +54,7 @@ def execute_in_sandbox(code):
                 ret.append(result)
 
         os.close(read_pipe)
-        #os.unlink(temporary_file)
+        #os.unlink(tmp_filename)
         return "".join(ret)
 
 if __name__ == "__main__":
