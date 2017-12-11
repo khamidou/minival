@@ -31,7 +31,7 @@ def execute_in_sandbox(code):
     os.close(tmp_fd)
 
     with open(tmp_filename, 'w+') as fd:
-        fd.write('import prctl ; prctl.set_seccomp(True)')
+        fd.write('import prctl ; prctl.set_seccomp(True)\n')
         fd.write(code)
 
     read_pipe, write_pipe = os.pipe()
