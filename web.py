@@ -28,8 +28,11 @@ def main():
 
 def execute_in_sandbox(code):
     tmp_fd, tmp_filename = tempfile.mkstemp(suffix='.py')
-    tmp_fd.write('import prctl ; prctl.set_seccomp(True)')
-    tmp_fd.write(code)
+    os.close(tmp_fd)
+
+    with open(tmp_filename, 'w+') as fd:
+        fd.write('import prctl ; prctl.set_seccomp(True)')
+        fd.write(code)
 
     read_pipe, write_pipe = os.pipe()
     pid = os.fork()
