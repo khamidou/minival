@@ -1,4 +1,4 @@
-#import prctl
+import prctl
 import io
 import os
 import sys
@@ -26,6 +26,11 @@ def main():
     return render_template("index.html", form=form)
 
 def execute_in_sandbox(code):
+    temporary_file = tempfile.mkstemp(suffix='.py')
+    with open(temporary_file, 'w+') as fd:
+        fd.write('import prctl ; prctl.set_seccomp(True)')
+        fd.write(code)
+
     read_pipe, write_pipe = os.pipe()
     pid = os.fork()
 
@@ -33,10 +38,10 @@ def execute_in_sandbox(code):
         # if fork() -> share environment & everything
         # execve while limiting reads to anything not in /etc, blocking
         # anything else.
-        cmd = "/usr/bin/emacs"
+        cmd = "/usr/bin/python"
 
         os.dup2(write_pipe, sys.stdout.fileno())
-        os.execv(cmd, [cmd, "--version"])
+        os.execv(cmd, [cmd, temporary_file])
     else:
         os.close(write_pipe)
         os.waitpid(pid, 0)
@@ -49,6 +54,7 @@ def execute_in_sandbox(code):
                 ret.append(result)
 
         os.close(read_pipe)
+        #os.unlink(temporary_file)
         return "".join(ret)
 
 if __name__ == "__main__":
