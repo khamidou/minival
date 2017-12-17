@@ -3,4 +3,4 @@ gunicorn==19.7.1
 WTForms==2.1
 Flask-WTF==0.14.2
 
-python-prctl==1.6.1
+python-ptrace==0.9.3
