@@ -43,7 +43,7 @@ def execute_in_sandbox(code):
         cmd = "/usr/bin/python"
 
         os.dup2(write_pipe, sys.stdout.fileno())
-        os.execv(cmd, [cmd, tmp_filename])
+        # os.execv(cmd, [cmd, tmp_filename])
     else:
         os.close(write_pipe)
         os.waitpid(pid, 0)
