@@ -1,7 +1,6 @@
 import io
 import os
 import sys
-import prctl
 import tempfile
 from flask import Flask, render_template, request
 
