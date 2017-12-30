@@ -1,19 +1,35 @@
-import io
 import os
 import sys
 import tempfile
-from flask import Flask, render_template, request
+import subprocess
+from flask import Flask, render_template
 
 from flask_wtf import FlaskForm
-from wtforms import TextAreaField
+from wtforms import TextAreaField, SelectField
 from wtforms.validators import DataRequired
+
 
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']
 
 
+def python_version():
+    return "Python {}".format(sys.version.split()[0])
+
+
+def ruby_version():
+    return subprocess.check_output(['ruby', '--version']).capitalize()
+
+
+def perl_version():
+    return subprocess.check_output(['perl', '-e', 'print "Perl " . $]'])
+
+
 class EvalForm(FlaskForm):
     code = TextAreaField('code', validators=[DataRequired()])
+    language = SelectField(
+        'Language',
+        choices=[('python', python_version()), ('ruby', ruby_version()), ('perl', perl_version())])
 
 
 @app.route("/", methods=("GET", "POST",))
@@ -26,8 +42,8 @@ def main():
     return render_template("index.html", form=form)
 
 
-def execute_in_sandbox(code):
-    tmp_fd, tmp_filename = tempfile.mkstemp(suffix='.py')
+def execute_in_sandbox(code, language='python'):
+    tmp_fd, tmp_filename = tempfile.mkstemp(suffix='.code')
     os.close(tmp_fd)
 
     with open(tmp_filename, 'w+') as fd:
@@ -43,7 +59,7 @@ def execute_in_sandbox(code):
         cmd = "seccompctl"
 
         os.dup2(write_pipe, sys.stdout.fileno())
-        os.execv(cmd, [cmd, "python", tmp_filename])
+        os.execv(cmd, [cmd, language, tmp_filename])
     else:
         os.close(write_pipe)
         os.waitpid(pid, 0)
