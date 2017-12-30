@@ -25,6 +25,7 @@ def main():
 
     return render_template("index.html", form=form)
 
+
 def execute_in_sandbox(code):
     tmp_fd, tmp_filename = tempfile.mkstemp(suffix='.py')
     os.close(tmp_fd)
@@ -56,8 +57,9 @@ def execute_in_sandbox(code):
                 ret.append(result)
 
         os.close(read_pipe)
-        #os.unlink(tmp_filename)
+        os.unlink(tmp_filename)
         return "".join(ret)
+
 
 if __name__ == "__main__":
     app.run()
