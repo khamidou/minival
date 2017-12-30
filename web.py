@@ -31,7 +31,6 @@ def execute_in_sandbox(code):
     os.close(tmp_fd)
 
     with open(tmp_filename, 'w+') as fd:
-        fd.write('import prctl ; prctl.set_seccomp(True)\n')
         fd.write(code)
 
     read_pipe, write_pipe = os.pipe()
@@ -41,10 +40,10 @@ def execute_in_sandbox(code):
         # if fork() -> share environment & everything
         # execve while limiting reads to anything not in /etc, blocking
         # anything else.
-        cmd = "/usr/bin/python"
+        cmd = "seccompctl"
 
         os.dup2(write_pipe, sys.stdout.fileno())
-        # os.execv(cmd, [cmd, tmp_filename])
+        os.execv(cmd, [cmd, "python", tmp_filename])
     else:
         os.close(write_pipe)
         os.waitpid(pid, 0)
@@ -62,4 +61,4 @@ def execute_in_sandbox(code):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host= '0.0.0.0')
