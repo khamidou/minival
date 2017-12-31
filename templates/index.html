@@ -2,29 +2,64 @@
 
 <html>
     <body>
-        <p>
-        <form method="POST">
-            {{ form.hidden_tag() }}
-            {% for error in form.code.errors %}
-            <p>{{ error }}</p>
-            {% endfor %}
+        <style>
+            html, body { margin: 0; padding: 0 }
+
+            body {
+                font-family: Helvetica, Arial, Lucida, Verdana, sans-serif;
+            }
+
+            .header {
+                margin: 0;
+                padding: 20px;
+                padding-left: 40px;
+                color: maroon;
+                background-color: linen;
+            }
+
+            .content {
+                margin-left: 40px;
+            }
+
+            textarea {
+                font-family: Monaco, Courier;
+            }
+
+            #footer {
+                color: maroon;
+                background-color: linen;
+                padding: 20px;
+                padding-left: 40px;
+            }
+
+        </style>
+
+        <div class="header">
+            <h1>Minival</h1>
+            <p>Minival lets you run code snippets online. I built it to illustrate how you can use seccomp(2) to build a simple sandbox.</p>
+        </div>
+        <div class="content">
             <p>
-            <b>{{ form.code.label }}</b><br /> {{ form.code(cols="80", rows="25") }}
-            </p>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                {% for error in form.code.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+                <p>
+                <b>{{ form.code.label }}</b><br /> <br /> {{ form.code(cols="80", rows="25") }}
+                </p>
+                <p>
+                    <b>Language:</b> {{ form.language }}
+                    <input type="submit" value="Run!">
+                </p>
+            </form>
             <p>
-            <b>Language:</b> {{ form.language }}
+            <b>Result:</b>
+            <pre>{{ result }}</pre>
             </p>
-            <p>
-            <input type="submit" value="Submit">
-            </p>
-        </form>
-        <p>
-        <b>Result:</b>
-        <pre>
-            <code>
-            {{ result }}
-            </code>
-        </pre>
-        </p>
+        </div>
+        <div id="footer">
+            Written by <a href="http://khamidou.com">Karim Hamidou</a>.
+        </div>
     </body>
 </html>

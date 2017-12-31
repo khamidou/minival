@@ -11,14 +11,11 @@ from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.secret_key = os.environ['SECRET_KEY']
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 
 def python_version():
     return "Python {}".format(sys.version.split()[0])
-
-
-def ruby_version():
-    return subprocess.check_output(['ruby', '--version']).capitalize()
 
 
 def perl_version():
@@ -26,18 +23,18 @@ def perl_version():
 
 
 class EvalForm(FlaskForm):
-    code = TextAreaField('code', validators=[DataRequired()])
+    code = TextAreaField('Paste your code:', validators=[DataRequired()])
     language = SelectField(
-        'Language',
-        choices=[('python', python_version()), ('ruby', ruby_version()), ('perl', perl_version())])
+        'Select the language:',
+        choices=[('python', python_version()), ('perl', perl_version())])
 
 
 @app.route("/", methods=("GET", "POST",))
 def main():
     form = EvalForm()
     if form.validate_on_submit():
-        res = execute_in_sandbox(form.code.data)
-        return render_template("index.html", form=form, result=res)
+        res = execute_in_sandbox(form.code.data, form.language.data)
+        return render_template("index.html", code=form.code.data, form=form, result=res)
 
     return render_template("index.html", form=form)
 
@@ -59,6 +56,7 @@ def execute_in_sandbox(code, language='python'):
         cmd = "seccompctl"
 
         os.dup2(write_pipe, sys.stdout.fileno())
+        os.dup2(write_pipe, sys.stderr.fileno())
         os.execv(cmd, [cmd, language, tmp_filename])
     else:
         os.close(write_pipe)

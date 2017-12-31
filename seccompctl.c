@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <seccomp.h>
 #include <signal.h>
@@ -54,7 +55,6 @@ int main(int argc, char **argv) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(readlink), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0);
@@ -62,15 +62,32 @@ int main(int argc, char **argv) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigreturn), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_tid_address), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sched_getaffinity), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_gettime), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrandom), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(stat), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sysinfo), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
 
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 2,
-            SCMP_A0(SCMP_CMP_EQ, O_RDONLY));
+    // Don't let people open files in read-write mode.
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1,
+            SCMP_A1(SCMP_CMP_EQ, O_RDONLY));
 
-    // setup our rule
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1,
+            SCMP_A1(SCMP_CMP_EQ, O_RDONLY|O_CLOEXEC));
+
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1,
+            SCMP_A1(SCMP_CMP_EQ, O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC));
+
+    // Disable sockets that aren't local
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1,
+            SCMP_A0(SCMP_CMP_EQ, AF_LOCAL));
+
+    // This is a one-off rule for perl
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl), 1,
+            SCMP_A2(SCMP_CMP_EQ, FD_CLOEXEC));
+
+
+    // Limit writes to the stdin, stdout and stderr.
     for (int i = 0; i < 3; i++) {
         seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1,
                                   SCMP_A0(SCMP_CMP_EQ, i));
@@ -81,6 +98,9 @@ int main(int argc, char **argv) {
 
     if (strncmp(argv[1], "python", 16) == 0) {
         char *args[] = { "/usr/bin/python", argv[2], 0};
+        execve(args[0], (char **const) &args, NULL);
+    } else if (strncmp(argv[1], "perl", 16) == 0) {
+        char *args[] = { "/usr/bin/perl", argv[2], 0};
         execve(args[0], (char **const) &args, NULL);
     }
 
