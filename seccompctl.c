@@ -23,11 +23,13 @@
 // That leaves us with 2/ – using OS primitives to somehow constrain processes.
 
 // After reading a lot of Stackoverflow questions, I found out that there really are two ways to limit processes:
-// 1. use ptrace(2), a debugging interface that lets you [peek around a process](http://man7.org/linux/man-pages/man2/ptrace.2.html)
-// 2. use seccomp(2), a Linux-only system call that lets a process define a whitelist of system calls it's allowed to make.
+// 1. use [ptrace(2)](http://man7.org/linux/man-pages/man2/ptrace.2.html), a debugging interface that lets you peek around a process
+// 2. use [seccomp(2)](http://man7.org/linux/man-pages/man2/seccomp.2.html), a Linux-only system call that lets a process define a whitelist of system calls it's allowed to make.
 
 // Ptrace seems fine – I heard that that's what [eval.in](https://eval.in) uses - but it would be a little annoying to implement in Python. It also has a non-negligible performance hit.
 
+// Seccomp is a little more interesting. It was created back in 2005 to let people [rent out their CPU (!)](https://lwn.net/Articles/120647/). Over the years it added the ability to define pretty fine-grained rules that the kernel will use to limit access to resources.
+//
 // Seccomp seemed a bit better at the time, even though it didn't really have a good Python interface, so I ended up writing everything in C.
 //
 // ## How minival works
@@ -106,7 +108,6 @@ int main(int argc, char **argv) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrandom), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrlimit), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getuid), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(lseek), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(lstat), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
@@ -142,10 +143,12 @@ int main(int argc, char **argv) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1,
             SCMP_A0(SCMP_CMP_EQ, AF_LOCAL));
 
-    // Another one-off rule – PERL needs to use fnctl for some reason, so let's
-    // open it up.
+    // Next are two one-off rules for PERL.
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl), 1,
             SCMP_A2(SCMP_CMP_EQ, FD_CLOEXEC));
+
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+            SCMP_A1(SCMP_CMP_EQ, TCGETS));
 
     // We also need to prevent people from writing to any files on the file system
     // besides stdin, stdout and stderr. To do that, we let people write to
@@ -155,7 +158,9 @@ int main(int argc, char **argv) {
                                   SCMP_A0(SCMP_CMP_EQ, i));
     }
 
-    // Now, let's load the filter!
+    // Now, let's load the filter! Note that it's critical to check the error code
+    // of this function, because we do not want to be running untrusted code because the
+    // filter wasn't created!
     if (seccomp_load(ctx) != 0) {
         printf("Couldn't load seccomp filter! Exiting!");
         exit(-1);
@@ -172,3 +177,15 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+// ## Wrapping up
+//
+// So, that's about it! As you can see, it was really easy to create a secure environment for our use case. If we had wanted to go the extra mile, we could have used something like [Linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) to provide separate file systems, networking, etc. to the sandboxed code – which is actually what LXC and Docker do to implement containers!
+//
+// If you're curious about the whole implementation, the source code is on [Github](https://github.com/khamidou/minival).
+// If you're interested in sandboxing, here's a list of resources I found very interesting:
+// - [an overview of the sandboxing system Chrome uses](https://chromium.googlesource.com/chromium/src/+/lkcr/docs/linux_sandboxing.md)
+// - [a presentation about pledge(2), OpenBSD's version of seccomp](http://www.openbsd.org/papers/hackfest2015-pledge/mgp00001.html) and some [thoughts about seccomp from a chromium security engineer](https://outflux.net/blog/archives/2015/11/11/evolution-of-seccomp/)
+// - [some old notes about the JVM sandbox](https://docs.oracle.com/javase/7/docs/technotes/guides/security/spec/security-spec.doc1.html)
+//
+// Of course, please let me know if you have questions or remarks (especially if you've found a security issue in the above code!) – send me an email at <code>hello at khamidou.com</code>!
