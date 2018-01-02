@@ -1,1 +1,3 @@
-eval – a toy project to explore safe program evaluation.
+Minival is a toy project to explore safe program evaluation.
+
+You can check it out on [Heroku](https://seccomp-eval.herokuapp.com/) or dive or read the commented source [here](https://khamidou.com/sandboxing).
