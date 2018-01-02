@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
 // If you're curious about the whole implementation, the source code is on [Github](https://github.com/khamidou/minival).
 // If you're interested in sandboxing, here's a list of resources I found very interesting:
 // - [an overview of the sandboxing system Chrome uses](https://chromium.googlesource.com/chromium/src/+/lkcr/docs/linux_sandboxing.md)
-// - [a presentation about pledge(2), OpenBSD's version of seccomp](http://www.openbsd.org/papers/hackfest2015-pledge/mgp00001.html) and some [thoughts about seccomp from a chromium security engineer](https://outflux.net/blog/archives/2015/11/11/evolution-of-seccomp/)
+// - [a presentation about pledge(2), OpenBSD's version of seccomp](http://www.openbsd.org/papers/hackfest2015-pledge/mgp00001.html) and some [related thoughts about seccomp from a chromium security engineer](https://outflux.net/blog/archives/2015/11/11/evolution-of-seccomp/)
 // - [some old notes about the JVM sandbox](https://docs.oracle.com/javase/7/docs/technotes/guides/security/spec/security-spec.doc1.html)
 //
 // Of course, please let me know if you have questions or remarks (especially if you've found a security issue in the above code!) – send me an email at <code>hello at khamidou.com</code>!
